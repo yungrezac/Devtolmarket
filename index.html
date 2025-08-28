@@ -144,49 +144,47 @@
     </div>
 
     <script>
-        // --- Данные о товарах ---
-        // ПРИМЕЧАНИЕ: Ссылки были заменены на те, что разрешают встраивание (embedding).
-        // Оригинальные ссылки с Netlify имеют заголовки безопасности, которые это блокируют.
+        // --- Данные о товарах с проверенными и рабочими ссылками ---
         const products = [
-             {
+            {
                 id: 1,
-                name: 'Калькулятор',
-                description: 'Простой и удобный калькулятор для быстрых расчетов.',
+                name: 'Игра 2048',
+                description: 'Классическая головоломка 2048 для проверки логики.',
                 price: '15 TON',
-                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Calc',
-                previewUrl: 'https://codepen.io/mjunaidi/embed/BqGGrW'
+                imageUrl: 'https://placehold.co/400x400/8e44ad/ffffff?text=2048',
+                previewUrl: 'https://alok-m.github.io/2048-in-js/'
             },
             {
                 id: 2,
-                name: 'Погода',
-                description: 'Приложение для просмотра прогноза погоды в вашем городе.',
+                name: 'Погодный информер',
+                description: 'Красивый анимированный интерфейс для прогноза погоды.',
                 price: '30 TON',
-                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Weather',
-                previewUrl: 'https://codepen.io/z-/embed/zYxdZep'
+                imageUrl: 'https://placehold.co/400x400/2980b9/ffffff?text=Weather',
+                previewUrl: 'https://codepen.io/WillyW/embed/SCKiz'
             },
             {
                 id: 3,
-                name: 'Крестики-нолики',
-                description: 'Классическая игра, чтобы скоротать время.',
+                name: 'Flip Часы',
+                description: 'Стильные и минималистичные часы с эффектом перелистывания.',
                 price: '10 TON',
-                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=XO',
-                previewUrl: 'https://codepen.io/giana/embed/BoapgR'
+                imageUrl: 'https://placehold.co/400x400/c0392b/ffffff?text=Clock',
+                previewUrl: 'https://h-jm.github.io/flip-clock/'
             },
             {
                 id: 4,
                 name: 'Блокнот для рисования',
                 description: 'Простой холст для ваших скетчей и заметок.',
                 price: '25 TON',
-                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Draw',
-                previewUrl: 'https://codepen.io/braydonc/embed/KwrLgP'
+                imageUrl: 'https://placehold.co/400x400/27ae60/ffffff?text=Draw',
+                previewUrl: 'https://williammalone.com/projects/html5-canvas-drawing-app/'
             },
             {
                 id: 5,
-                name: 'Pomodoro Таймер',
-                description: 'Таймер для повышения продуктивности по технике Pomodoro.',
+                name: 'Музыкальный плеер',
+                description: 'Интерфейс простого плеера для ваших треков.',
                 price: '20 TON',
-                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Timer',
-                previewUrl: 'https://codepen.io/kfarr/embed/oWzJgL'
+                imageUrl: 'https://placehold.co/400x400/f39c12/ffffff?text=Player',
+                previewUrl: 'https://codepen.io/Mamboleoo/embed/XWJPjGg'
             }
         ];
 
@@ -196,7 +194,6 @@
             tg.ready();
             tg.expand();
 
-            // --- Получение всех необходимых элементов со страницы ---
             const gridView = document.getElementById('grid-view');
             const previewView = document.getElementById('preview-view');
             const productGrid = document.getElementById('product-grid');
@@ -214,19 +211,14 @@
             
             let currentProduct = null;
 
-            // Приветствие пользователя
             if (tg.initDataUnsafe?.user?.first_name) {
                 welcomeMessage.textContent = `Добро пожаловать, ${tg.initDataUnsafe.user.first_name}!`;
             }
 
-            // --- Функции ---
-
-            // Функция для отрисовки сетки товаров
             function renderProducts() {
-                productGrid.innerHTML = ''; // Очищаем перед отрисовкой
+                productGrid.innerHTML = '';
                 products.forEach(product => {
                     const card = document.createElement('div');
-                    // Используем data-атрибут для хранения ID товара
                     card.dataset.productId = product.id;
                     card.className = 'product-card rounded-lg p-3 flex flex-col shadow-lg cursor-pointer';
                     card.innerHTML = `
@@ -241,41 +233,33 @@
                             </span>
                         </div>
                     `;
-                    // Добавляем обработчик клика на саму карточку
                     card.addEventListener('click', () => showPreview(product.id));
                     productGrid.appendChild(card);
                 });
             }
 
-            // Функция для показа экрана предпросмотра
             function showPreview(productId) {
                 currentProduct = products.find(p => p.id == productId);
                 if (!currentProduct) return;
 
-                // Заполняем данные на экране предпросмотра
                 previewTitle.textContent = currentProduct.name;
                 previewDescription.textContent = currentProduct.description;
                 previewBuyButton.textContent = `Купить за ${currentProduct.price}`;
                 previewIframe.src = currentProduct.previewUrl;
 
-                // Переключаем видимость экранов
                 gridView.classList.add('hidden');
                 previewView.classList.remove('hidden');
                 
-                // Тактильный отклик для лучшего UX
                 tg.HapticFeedback.impactOccurred('light');
             }
 
-            // Функция для возврата к сетке товаров
             function showGrid() {
                 currentProduct = null;
-                previewIframe.src = 'about:blank'; // Выгружаем iframe для экономии ресурсов
+                previewIframe.src = 'about:blank';
                 
                 previewView.classList.add('hidden');
                 gridView.classList.remove('hidden');
             }
-
-            // --- Назначение обработчиков событий ---
 
             backButton.addEventListener('click', showGrid);
 
@@ -290,7 +274,6 @@
                 modal.classList.add('hidden');
             });
 
-            // --- Инициализация приложения ---
             renderProducts();
         });
     </script>
