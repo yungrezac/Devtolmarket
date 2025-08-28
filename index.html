@@ -32,18 +32,17 @@
         .action-button:active { background-color: #6ca0d9; }
         .icon-button { background: rgba(0,0,0,0.2); border-radius: 99px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
         
-        /* --- ИЗМЕНЕНИЯ ДЛЯ ПОЛНОЭКРАННОЙ РАМКИ --- */
         .iphone-frame-container {
-            flex-grow: 1; /* Заставляет этот блок занять все доступное пространство */
+            flex-grow: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0.5rem 0.75rem 0.75rem; /* Отступы вокруг рамки */
+            padding: 0.5rem 0.75rem 0.75rem;
         }
         .iphone-frame {
             position: relative;
             width: 100%;
-            height: 100%; /* Рамка занимает всю высоту контейнера */
+            height: 100%;
             max-width: 400px;
             border: 10px solid #111;
             border-radius: 40px;
@@ -52,7 +51,6 @@
             padding: 4px;
             box-sizing: border-box;
         }
-        /* --- КОНЕЦ ИЗМЕНЕНИЙ --- */
 
         .iphone-frame::before {
             content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
@@ -88,7 +86,6 @@
                 <button id="preview-buy-button" class="action-button py-2 px-3 rounded-lg font-bold text-sm">Купить</button>
             </div>
         </header>
-        <!-- Контейнер для рамки, который будет растягиваться -->
         <div class="iphone-frame-container">
             <div class="iphone-frame"><div class="iphone-screen"><iframe id="preview-iframe"></iframe></div></div>
         </div>
@@ -114,7 +111,7 @@
 
     <script>
     // ===================================================================================
-    // КОНТЕНТ ВСТРОЕННЫХ МИНИ-ПРИЛОЖЕНИЙ (С РАСШИРЕННЫМ ФУНКЦИОНАЛОМ)
+    // КОНТЕНТ ВСТРОЕННЫХ МИНИ-ПРИЛОЖЕНИЙ (С УМЕНЬШЕННЫМ МАСШТАБОМ)
     // ===================================================================================
     const appContent = {
         cryptoWallet: {
@@ -122,139 +119,211 @@
                 <div class="wallet-container">
                     <header>
                         <p>Общий баланс</p>
-                        <h1>$1,234.56</h1>
+                        <h1 id="balance">$1,234.56</h1>
                     </header>
                     <div class="actions">
-                        <button class="btn-primary"><span>⬆️</span> Отправить</button>
-                        <button class="btn-secondary"><span>⬇️</span> Получить</button>
+                        <button id="add-tx-in" class="btn-secondary"><span>⬇️</span> Случайное пополнение</button>
+                        <button id="add-tx-out" class="btn-primary"><span>⬆️</span> Случайный расход</button>
                     </div>
                     <div class="history">
                         <h3>История</h3>
-                        <div class="transaction"><div><p>Получено BTC</p><small>Сегодня</small></div><span class="in">+0.05 BTC</span></div>
-                        <div class="transaction"><div><p>Отправлено ETH</p><small>Вчера</small></div><span class="out">-1.2 ETH</span></div>
-                        <div class="transaction"><div><p>Получено TON</p><small>25 Авг</small></div><span class="in">+15 TON</span></div>
+                        <div id="tx-list">
+                            <div class="transaction"><div><p>Получено BTC</p><small>Сегодня</small></div><span class="in">+0.05 BTC</span></div>
+                            <div class="transaction"><div><p>Отправлено ETH</p><small>Вчера</small></div><span class="out">-1.2 ETH</span></div>
+                        </div>
                     </div>
                 </div>`,
             css: `
-                body { font-family: sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 20px; font-size: 14px; }
+                body { font-family: sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 15px; font-size: 13px; }
                 header p { margin: 0; color: #aaa; }
-                header h1 { margin: 5px 0 25px; font-size: 2.2em; }
-                .actions { display: flex; gap: 15px; justify-content: center; margin-bottom: 25px; }
-                button { border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-                .btn-primary { background: #007bff; color: white; }
-                .btn-secondary { background: #333; color: white; }
-                .history h3 { text-align: left; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 5px; }
-                .transaction { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+                header h1 { margin: 2px 0 20px; font-size: 2em; }
+                .actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+                button { border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 0.9em; }
+                .btn-primary { background: #333; color: white; }
+                .btn-secondary { background: #007bff; color: white; }
+                .history h3 { text-align: left; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 5px; font-size: 1em; }
+                .transaction { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; animation: fadeIn 0.5s; }
                 .transaction p { margin: 0; } .transaction small { color: #888; }
-                .transaction .in { color: #28a745; } .transaction .out { color: #dc3545; }`
+                .transaction .in { color: #28a745; } .transaction .out { color: #dc3545; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }`,
+            js: `
+                const balanceEl = document.getElementById('balance');
+                const txListEl = document.getElementById('tx-list');
+                let currentBalance = 1234.56;
+                const currencies = ['BTC', 'ETH', 'TON', 'SOL', 'USDT'];
+
+                function addTransaction(isIncoming) {
+                    const currency = currencies[Math.floor(Math.random() * currencies.length)];
+                    const amount = parseFloat((Math.random() * (currency === 'BTC' ? 0.1 : 10)).toFixed(4));
+                    const usdValue = parseFloat((Math.random() * 500 + 20).toFixed(2));
+                    
+                    currentBalance += isIncoming ? usdValue : -usdValue;
+                    balanceEl.textContent = \`$\${currentBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
+
+                    const txDiv = document.createElement('div');
+                    txDiv.className = 'transaction';
+                    txDiv.innerHTML = \`
+                        <div><p>\${isIncoming ? 'Получено' : 'Отправлено'} \${currency}</p><small>Только что</small></div>
+                        <span class="\${isIncoming ? 'in' : 'out'}">\${isIncoming ? '+' : '-'}\${amount} \${currency}</span>
+                    \`;
+                    txListEl.prepend(txDiv);
+                }
+
+                document.getElementById('add-tx-in').addEventListener('click', () => addTransaction(true));
+                document.getElementById('add-tx-out').addEventListener('click', () => addTransaction(false));
+            `
         },
         taskManager: {
             html: `
                 <div class="task-app">
-                    <header><h1>Мои Задачи</h1><span id="task-counter">0 задач</span></header>
+                    <header><h1>Мои Задачи</h1><span id="task-counter"></span></header>
+                    <div class="filters">
+                        <button data-filter="all" class="active">Все</button>
+                        <button data-filter="active">Активные</button>
+                        <button data-filter="completed">Выполненные</button>
+                    </div>
                     <ul id="task-list"></ul>
                     <form id="add-task-form">
                         <input type="text" id="task-input" placeholder="Например, купить молоко..." required>
                         <button type="submit">+</button>
                     </form>
+                    <button id="clear-completed" style="display:none;">Очистить выполненные</button>
                 </div>`,
             css: `
-                body { background: #f0f2f5; font-family: sans-serif; margin: 0; }
-                .task-app { padding: 20px; }
+                body { background: #f0f2f5; font-family: sans-serif; margin: 0; font-size: 14px; }
+                .task-app { padding: 15px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
                 header { display: flex; justify-content: space-between; align-items: center; }
-                h1 { color: #1c1e21; margin: 0; font-size: 1.5em; }
-                #task-counter { color: #888; }
-                ul { list-style: none; padding: 0; margin: 15px 0; }
-                li { background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+                h1 { color: #1c1e21; margin: 0; font-size: 1.4em; }
+                #task-counter { color: #888; font-size: 0.9em; }
+                .filters { display: flex; gap: 8px; margin: 10px 0; }
+                .filters button { background: #e4e6eb; border: none; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
+                .filters button.active { background: #1877f2; color: white; }
+                ul { list-style: none; padding: 0; margin: 0; flex-grow: 1; overflow-y: auto; }
+                li { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
                 .task-text { cursor: pointer; flex-grow: 1; }
                 .task-text.completed { text-decoration: line-through; color: #888; }
-                .delete-btn { background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; }
-                form { display: flex; }
-                input { flex-grow: 1; border: 1px solid #ddd; padding: 12px; border-radius: 8px 0 0 8px; }
-                button[type="submit"] { border: none; background: #1877f2; color: white; font-size: 1.5em; width: 50px; border-radius: 0 8px 8px 0; }`,
+                .delete-btn { background: #fa383e; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; line-height: 22px; }
+                form { display: flex; margin-top: 10px; }
+                input { flex-grow: 1; border: 1px solid #ddd; padding: 10px; border-radius: 8px 0 0 8px; }
+                button[type="submit"] { border: none; background: #1877f2; color: white; font-size: 1.5em; width: 45px; border-radius: 0 8px 8px 0; }
+                #clear-completed { background: #6c757d; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 8px; width: 100%; cursor: pointer; font-size: 0.9em; }`,
             js: `
                 const form = document.getElementById('add-task-form');
                 const input = document.getElementById('task-input');
                 const list = document.getElementById('task-list');
                 const counter = document.getElementById('task-counter');
-                
-                function updateCounter() {
-                    const count = list.children.length;
-                    counter.textContent = \`\${count} задач\`;
+                const clearBtn = document.getElementById('clear-completed');
+                const filters = document.querySelector('.filters');
+                let currentFilter = 'all';
+
+                function renderTasks() {
+                    Array.from(list.children).forEach(li => {
+                        const isCompleted = li.querySelector('.task-text').classList.contains('completed');
+                        if (currentFilter === 'all') li.style.display = 'flex';
+                        else if (currentFilter === 'active') li.style.display = isCompleted ? 'none' : 'flex';
+                        else if (currentFilter === 'completed') li.style.display = isCompleted ? 'flex' : 'none';
+                    });
+                    const completedCount = list.querySelectorAll('.completed').length;
+                    clearBtn.style.display = completedCount > 0 ? 'block' : 'none';
+                    const activeCount = list.children.length - completedCount;
+                    counter.textContent = \`\${activeCount} активных\`;
                 }
 
-                form.addEventListener('submit', (e) => {
+                form.addEventListener('submit', e => {
                     e.preventDefault();
-                    const taskText = input.value.trim();
-                    if (taskText) {
+                    if (input.value.trim()) {
                         const li = document.createElement('li');
-                        li.innerHTML = \`<span class="task-text">\${taskText}</span><button class="delete-btn">-</button>\`;
-                        list.appendChild(li);
+                        li.innerHTML = \`<span class="task-text">\${input.value.trim()}</span><button class="delete-btn">-</button>\`;
+                        list.prepend(li);
                         input.value = '';
-                        updateCounter();
+                        renderTasks();
                     }
                 });
 
-                list.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('task-text')) {
-                        e.target.classList.toggle('completed');
-                    }
-                    if (e.target.classList.contains('delete-btn')) {
-                        e.target.parentElement.remove();
-                        updateCounter();
+                list.addEventListener('click', e => {
+                    if (e.target.classList.contains('task-text')) e.target.classList.toggle('completed');
+                    if (e.target.classList.contains('delete-btn')) e.target.parentElement.remove();
+                    renderTasks();
+                });
+
+                filters.addEventListener('click', e => {
+                    if (e.target.tagName === 'BUTTON') {
+                        document.querySelector('.filters .active').classList.remove('active');
+                        e.target.classList.add('active');
+                        currentFilter = e.target.dataset.filter;
+                        renderTasks();
                     }
                 });
-                updateCounter();`
+
+                clearBtn.addEventListener('click', () => {
+                    list.querySelectorAll('.completed').forEach(el => el.parentElement.remove());
+                    renderTasks();
+                });
+                renderTasks();`
         },
         ecommerceUI: {
             html: `
                 <div class="product-page">
-                    <div class="image-gallery"><img src="https://placehold.co/400x400/3498db/ffffff?text=Product" alt="Product"></div>
+                    <div class="image-gallery"><img id="product-image" src="https://placehold.co/400x400/3498db/ffffff?text=Blue" alt="Product"></div>
                     <div class="details">
                         <h2>Классные кроссовки</h2>
                         <p class="price">$120.00</p>
                         <div class="options">
+                            <div class="color-selector">
+                                <p>Цвет:</p>
+                                <button class="color-btn active" data-color="blue" style="background-color: #3498db;"></button>
+                                <button class="color-btn" data-color="red" style="background-color: #e74c3c;"></button>
+                                <button class="color-btn" data-color="black" style="background-color: #333;"></button>
+                            </div>
                             <div class="size-selector">
-                                <p>Размер:</p>
                                 <button class="size-btn active">41</button><button class="size-btn">42</button><button class="size-btn">43</button>
                             </div>
-                            <div class="quantity-selector">
-                                <button id="minus">-</button><span id="quantity">1</span><button id="plus">+</button>
-                            </div>
                         </div>
-                        <p class="description">Отличные кроссовки для бега и повседневной носки.</p>
-                        <button class="add-to-cart">Добавить в корзину</button>
+                        <button id="add-to-cart" class="add-to-cart">Добавить в корзину</button>
                     </div>
                 </div>`,
             css: `
-                body { margin: 0; font-family: sans-serif; background: #fff; color: #333; }
+                body { margin: 0; font-family: sans-serif; background: #fff; color: #333; font-size: 14px; }
                 .image-gallery img { width: 100%; display: block; }
                 .details { padding: 15px; }
-                h2 { margin: 0; }
-                .price { font-size: 1.5em; font-weight: bold; color: #3498db; margin: 5px 0; }
-                .options { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; }
-                .size-selector { display: flex; align-items: center; gap: 5px; }
-                .size-btn { border: 1px solid #ccc; background: #fff; padding: 5px 10px; border-radius: 5px; }
+                h2 { margin: 0; font-size: 1.2em; }
+                .price { font-size: 1.4em; font-weight: bold; color: #3498db; margin: 5px 0; }
+                .options { margin: 10px 0; }
+                .color-selector, .size-selector { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+                .color-selector p { font-size: 0.9em; margin: 0; }
+                .color-btn { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #ccc; cursor: pointer; }
+                .color-btn.active { box-shadow: 0 0 0 2px #3498db; }
+                .size-btn { border: 1px solid #ccc; background: #fff; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
                 .size-btn.active { background: #3498db; color: white; border-color: #3498db; }
-                .quantity-selector { display: flex; align-items: center; gap: 10px; }
-                .quantity-selector button { font-weight: bold; border: 1px solid #ccc; width: 30px; height: 30px; border-radius: 50%; }
-                .description { color: #777; line-height: 1.5; font-size: 0.9em; }
-                .add-to-cart { display: block; width: 100%; padding: 15px; border: none; background: #3498db; color: white; font-size: 1em; font-weight: bold; border-radius: 10px; }`,
+                .add-to-cart { display: block; width: 100%; padding: 12px; border: none; background: #3498db; color: white; font-size: 1em; font-weight: bold; border-radius: 10px; transition: background 0.2s; }
+                .add-to-cart.added { background: #28a745; }`,
             js: `
-                const quantityEl = document.getElementById('quantity');
-                document.getElementById('plus').addEventListener('click', () => {
-                    quantityEl.textContent = parseInt(quantityEl.textContent) + 1;
+                const cartBtn = document.getElementById('add-to-cart');
+                const productImage = document.getElementById('product-image');
+                const colors = {
+                    blue: 'https://placehold.co/400x400/3498db/ffffff?text=Blue',
+                    red: 'https://placehold.co/400x400/e74c3c/ffffff?text=Red',
+                    black: 'https://placehold.co/400x400/333333/ffffff?text=Black'
+                };
+
+                cartBtn.addEventListener('click', () => {
+                    cartBtn.textContent = 'Добавлено!';
+                    cartBtn.classList.add('added');
+                    setTimeout(() => {
+                        cartBtn.textContent = 'Добавить в корзину';
+                        cartBtn.classList.remove('added');
+                    }, 1500);
                 });
-                document.getElementById('minus').addEventListener('click', () => {
-                    let q = parseInt(quantityEl.textContent);
-                    if (q > 1) quantityEl.textContent = q - 1;
-                });
-                document.querySelectorAll('.size-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        document.querySelector('.size-btn.active').classList.remove('active');
-                        e.target.classList.add('active');
-                    });
-                });`
+
+                document.querySelectorAll('.size-btn').forEach(btn => btn.addEventListener('click', e => {
+                    document.querySelector('.size-btn.active').classList.remove('active');
+                    e.target.classList.add('active');
+                }));
+                document.querySelectorAll('.color-btn').forEach(btn => btn.addEventListener('click', e => {
+                    document.querySelector('.color-btn.active').classList.remove('active');
+                    e.target.classList.add('active');
+                    productImage.src = colors[e.target.dataset.color];
+                }));`
         },
         quizApp: {
             html: `
@@ -269,19 +338,21 @@
                     </div>
                 </div>`,
             css: `
-                body { background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); font-family: sans-serif; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 15px; box-sizing: border-box; }
+                body { background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); font-family: sans-serif; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 15px; box-sizing: border-box; font-size: 14px; }
                 .quiz-container { width: 100%; }
-                #quiz-card, #result-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; }
-                #progress { color: #ddd; }
-                .option { background: rgba(255,255,255,0.2); padding: 12px; margin: 8px 0; border-radius: 10px; cursor: pointer; transition: background 0.2s; }
-                .option.correct { background: #28a745; } .option.wrong { background: #dc3545; }
+                #quiz-card, #result-card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; text-align: center; }
+                #progress { color: #ddd; font-size: 0.9em; }
+                #question { font-size: 1.1em; }
+                .option { background: rgba(255,255,255,0.2); padding: 10px; margin: 8px 0; border-radius: 10px; cursor: pointer; transition: background 0.2s; border: 2px solid transparent; font-size: 0.9em; }
+                .option.correct { background: #28a745; border-color: #fff; }
+                .option.wrong { background: #dc3545; }
                 #restart { border: none; background: #fff; color: #6a11cb; padding: 10px 20px; border-radius: 8px; font-weight: bold; }`,
             js: `
                 const questions = [
                     { q: "Столица Франции?", o: ["Берлин", "Мадрид", "Париж", "Рим"], a: "Париж" },
                     { q: "2 + 2 * 2 = ?", o: ["6", "8", "4", "10"], a: "6" },
                     { q: "Какая планета красная?", o: ["Юпитер", "Марс", "Венера", "Сатурн"], a: "Марс" },
-                    { q: "Самое высокое здание в мире?", o: ["Шанхайская башня", "Бурдж-Халифа", "Мердека 118"], a: "Бурдж-Халифа" }
+                    { q: "Самое высокое здание?", o: ["Шанхайская башня", "Бурдж-Халифа", "Мердека 118"], a: "Бурдж-Халифа" }
                 ];
                 let currentQ = 0; let score = 0;
 
@@ -305,19 +376,20 @@
                     questionEl.textContent = qData.q;
                     optionsEl.innerHTML = '';
                     optionsEl.style.pointerEvents = 'auto';
-                    qData.o.forEach(option => {
+                    qData.o.forEach(optionText => {
                         const btn = document.createElement('div');
-                        btn.textContent = option;
+                        btn.textContent = optionText;
                         btn.className = 'option';
                         btn.addEventListener('click', () => {
                             optionsEl.style.pointerEvents = 'none';
-                            if (option === qData.a) {
+                            if (optionText === qData.a) {
                                 score++;
                                 btn.classList.add('correct');
                             } else {
                                 btn.classList.add('wrong');
+                                Array.from(optionsEl.children).find(child => child.textContent === qData.a).classList.add('correct');
                             }
-                            setTimeout(() => { currentQ++; loadQuestion(); }, 1000);
+                            setTimeout(() => { currentQ++; loadQuestion(); }, 1500);
                         });
                         optionsEl.appendChild(btn);
                     });
@@ -332,32 +404,98 @@
         musicPlayer: {
             html: `
                 <div class="player">
-                    <img src="https://placehold.co/400x400/1db954/ffffff?text=Album" alt="Album Art" class="album-art">
+                    <img id="album-art" src="https://placehold.co/400x400/1db954/ffffff?text=Spotify" alt="Album Art" class="album-art">
                     <div class="track-info">
-                        <h2>Название Трека</h2><p>Исполнитель</p>
+                        <h2 id="track-title">Название Трека</h2><p id="track-artist">Исполнитель</p>
                     </div>
+                    <div class="timer"><span id="current-time">0:00</span><span id="duration">3:45</span></div>
                     <div class="progress-bar"><div id="progress"></div></div>
                     <div class="controls">
-                        <button>⏮</button><button id="play-btn">▶️</button><button>⏭</button>
+                        <button id="prev-btn">⏮</button><button id="play-btn">▶️</button><button id="next-btn">⏭</button>
                     </div>
                 </div>`,
             css: `
-                body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 14px; }
                 .player { text-align: center; width: 90%; }
-                .album-art { width: 100%; border-radius: 15px; margin-bottom: 20px; }
-                .track-info h2 { margin: 0; } .track-info p { color: #b3b3b3; margin: 5px 0 15px; }
-                .progress-bar { background: #444; border-radius: 5px; height: 5px; margin-bottom: 15px; }
-                #progress { background: #1db954; width: 30%; height: 100%; border-radius: 5px; }
+                .album-art { width: 100%; max-width: 250px; border-radius: 15px; margin: 0 auto 15px; }
+                .track-info h2 { margin: 0; font-size: 1.2em; } .track-info p { color: #b3b3b3; margin: 4px 0 10px; font-size: 0.9em; }
+                .timer { display: flex; justify-content: space-between; font-size: 0.8em; color: #b3b3b3; }
+                .progress-bar { background: #444; border-radius: 5px; height: 4px; margin: 5px 0 10px; }
+                #progress { background: #1db954; width: 0%; height: 100%; border-radius: 5px; transition: width 1s linear; }
                 .controls { display: flex; justify-content: center; align-items: center; gap: 20px; }
-                .controls button { background: none; border: none; color: white; font-size: 2em; }
-                #play-btn { font-size: 3em; }`,
+                .controls button { background: none; border: none; color: white; font-size: 1.8em; cursor: pointer; }
+                #play-btn { font-size: 2.8em; }`,
             js: `
-                const playBtn = document.getElementById('play-btn');
+                const playlist = [
+                    { title: "Blinding Lights", artist: "The Weeknd", duration: 200, art: "https://placehold.co/400x400/c0392b/ffffff?text=BL" },
+                    { title: "As It Was", artist: "Harry Styles", duration: 167, art: "https://placehold.co/400x400/2980b9/ffffff?text=AIW" },
+                    { title: "Levitating", artist: "Dua Lipa", duration: 203, art: "https://placehold.co/400x400/8e44ad/ffffff?text=LVT" }
+                ];
+                let currentTrackIndex = 0;
                 let isPlaying = false;
+                let progressInterval;
+
+                const playBtn = document.getElementById('play-btn');
+                const nextBtn = document.getElementById('next-btn');
+                const prevBtn = document.getElementById('prev-btn');
+                const progress = document.getElementById('progress');
+                const currentTimeEl = document.getElementById('current-time');
+                const durationEl = document.getElementById('duration');
+                
+                function formatTime(seconds) {
+                    const min = Math.floor(seconds / 60);
+                    const sec = Math.floor(seconds % 60).toString().padStart(2, '0');
+                    return \`\${min}:\${sec}\`;
+                }
+
+                function loadTrack(index) {
+                    const track = playlist[index];
+                    document.getElementById('album-art').src = track.art;
+                    document.getElementById('track-title').textContent = track.title;
+                    document.getElementById('track-artist').textContent = track.artist;
+                    durationEl.textContent = formatTime(track.duration);
+                    resetPlayer();
+                }
+
+                function resetPlayer() {
+                    clearInterval(progressInterval);
+                    isPlaying = false;
+                    playBtn.textContent = '▶️';
+                    progress.style.transition = 'none';
+                    progress.style.width = '0%';
+                    currentTimeEl.textContent = '0:00';
+                }
+
                 playBtn.addEventListener('click', () => {
                     isPlaying = !isPlaying;
                     playBtn.textContent = isPlaying ? '⏸️' : '▶️';
-                });`
+                    if (isPlaying) {
+                        let currentTime = parseFloat(progress.style.width) / 100 * playlist[currentTrackIndex].duration;
+                        progress.style.transition = 'width 1s linear';
+                        progressInterval = setInterval(() => {
+                            currentTime++;
+                            const progressPercent = (currentTime / playlist[currentTrackIndex].duration) * 100;
+                            progress.style.width = \`\${progressPercent}%\`;
+                            currentTimeEl.textContent = formatTime(currentTime);
+                            if (currentTime >= playlist[currentTrackIndex].duration) {
+                                resetPlayer();
+                            }
+                        }, 1000);
+                    } else {
+                        clearInterval(progressInterval);
+                    }
+                });
+
+                nextBtn.addEventListener('click', () => {
+                    currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                    loadTrack(currentTrackIndex);
+                });
+                prevBtn.addEventListener('click', () => {
+                    currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+                    loadTrack(currentTrackIndex);
+                });
+
+                loadTrack(0);`
         }
     };
 
@@ -366,11 +504,11 @@
     // ===================================================================================
     document.addEventListener('DOMContentLoaded', () => {
         const products = [
-            { id: 1, name: 'Crypto Wallet UI', description: 'Современный и чистый интерфейс для крипто-кошелька.', price: '45 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Wallet', content: appContent.cryptoWallet },
-            { id: 2, name: 'Task Tracker', description: 'Простой и удобный менеджер задач для вашей команды.', price: '30 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Tasks', content: appContent.taskManager },
-            { id: 3, name: 'Shop Frontend', description: 'Готовый шаблон для витрины вашего интернет-магазина.', price: '65 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Shop', content: appContent.ecommerceUI },
-            { id: 4, name: 'Interactive Quiz', description: 'Вовлекайте аудиторию, создавая увлекательные квизы.', price: '40 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Quiz', content: appContent.quizApp },
-            { id: 5, name: 'Audio Player Kit', description: 'Стильный и минималистичный музыкальный плеер.', price: '50 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Music', content: appContent.musicPlayer }
+            { id: 1, name: 'Crypto Wallet', description: 'Интерактивный крипто-кошелек с динамическим балансом и историей транзакций.', price: '45 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Wallet', content: appContent.cryptoWallet },
+            { id: 2, name: 'Task Tracker', description: 'Менеджер задач с фильтрами (все, активные, выполненные) и очисткой.', price: '30 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Tasks', content: appContent.taskManager },
+            { id: 3, name: 'E-commerce UI', description: 'Карточка товара с выбором цвета, размера и анимированной кнопкой покупки.', price: '65 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Shop', content: appContent.ecommerceUI },
+            { id: 4, name: 'Interactive Quiz', description: 'Увлекательный квиз с мгновенной подсветкой правильных/неправильных ответов.', price: '40 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Quiz', content: appContent.quizApp },
+            { id: 5, name: 'Music Player', description: 'Симулятор музыкального плеера с плейлистом, таймером и анимированным прогрессом.', price: '50 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Music', content: appContent.musicPlayer }
         ];
 
         const tg = window.Telegram.WebApp;
@@ -435,8 +573,6 @@
             previewView.classList.remove('hidden');
             tg.HapticFeedback.impactOccurred('light');
         }
-
-
 
         function showGrid() {
             currentProduct = null;
