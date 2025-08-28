@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>devtol.market</title>
-    <!-- Подключение Tailwind CSS для стилей -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Скрипт Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Основные переменные темы, соответствующие Telegram */
         :root {
             --tg-theme-bg-color: #18222d;
             --tg-theme-text-color: #ffffff;
@@ -18,264 +15,441 @@
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #222e3a;
         }
-
-        /* Базовые стили для всего приложения */
-        html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden; /* Предотвращаем прокрутку на уровне body */
-        }
-
+        html, body { height: 100%; width: 100%; overflow: hidden; font-size: 15px; }
         body {
             background-color: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
         }
-
-        /* Стили для экранов (view) */
-        .view {
-            width: 100%;
-            height: 100%;
-            box-sizing: border-box;
-            overflow-y: auto; /* Включаем прокрутку внутри экрана */
-        }
-
-        /* Стили для карточки товара и кнопок */
-        .product-card {
-            background-color: var(--tg-theme-secondary-bg-color);
-            border: 1px solid #304050;
-        }
+        .view { width: 100%; height: 100%; box-sizing: border-box; overflow-y: auto; }
+        .product-card { background-color: var(--tg-theme-secondary-bg-color); border: 1px solid #304050; }
         .action-button {
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
             transition: background-color 0.2s ease;
         }
-        .action-button:active {
-            background-color: #6ca0d9; /* Эффект при нажатии */
-        }
-        
-        /* Стили для рамки iPhone */
+        .action-button:active { background-color: #6ca0d9; }
+        .icon-button { background: rgba(0,0,0,0.2); border-radius: 99px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
         .iphone-frame {
-            position: relative;
-            width: 100%;
-            max-width: 375px; /* Типичная ширина для эмуляции */
-            height: 75vh;
-            max-height: 750px;
-            margin: 1rem auto;
-            border: 12px solid #111;
-            border-radius: 50px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            background: #000;
-            padding: 5px;
-            box-sizing: border-box;
+            position: relative; width: 100%; max-width: 340px; height: 70vh; max-height: 680px;
+            margin: 0.5rem auto; border: 10px solid #111; border-radius: 40px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5); background: #000; padding: 4px; box-sizing: border-box;
         }
-        .iphone-frame::before { /* "Челка" iPhone */
-            content: '';
-            position: absolute;
-            top: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40%;
-            height: 25px;
-            background: #111;
-            border-radius: 0 0 15px 15px;
-            z-index: 2;
+        .iphone-frame::before {
+            content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+            width: 35%; height: 20px; background: #111; border-radius: 0 0 12px 12px; z-index: 2;
         }
-        .iphone-screen {
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            border-radius: 40px;
-            overflow: hidden;
-        }
-        .iphone-screen iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
+        .iphone-screen { width: 100%; height: 100%; background: #fff; border-radius: 35px; overflow: hidden; }
+        .iphone-screen iframe { width: 100%; height: 100%; border: none; }
+        
+        /* Стили для модального окна информации */
+        #info-modal-overlay { transition: opacity 0.3s ease; }
+        #info-modal { transition: transform 0.3s ease-in-out; }
+        #info-modal.is-open { transform: translateY(0); }
     </style>
 </head>
 <body>
 
     <!-- Экран 1: Сетка с товарами -->
-    <div id="grid-view" class="view p-4">
-        <header class="text-center my-4">
-            <h1 class="text-3xl font-bold tracking-tight">devtol.market</h1>
-            <p id="welcome-message" class="text-lg" style="color: var(--tg-theme-hint-color);">Готовые Telegram Mini Apps</p>
+    <div id="grid-view" class="view p-3">
+        <header class="text-center my-3">
+            <h1 class="text-2xl font-bold tracking-tight">devtol.market</h1>
+            <p id="welcome-message" class="text-base" style="color: var(--tg-theme-hint-color);">Готовые Telegram Mini Apps</p>
         </header>
-        <main>
-            <div id="product-grid" class="grid grid-cols-2 gap-4">
-                <!-- Карточки товаров будут вставлены сюда через JS -->
-            </div>
-        </main>
+        <main><div id="product-grid" class="grid grid-cols-2 gap-3"></div></main>
     </div>
 
     <!-- Экран 2: Предпросмотр товара -->
     <div id="preview-view" class="view hidden flex flex-col p-0">
-        <!-- Верхняя панель с кнопкой "Назад" -->
-        <header class="flex-shrink-0 p-4">
-            <button id="back-button" class="action-button py-2 px-4 rounded-lg font-semibold">&larr; Назад</button>
-        </header>
-        <!-- Основная часть с iframe -->
-        <div class="flex-grow flex flex-col items-center justify-center px-4">
-            <div class="iphone-frame">
-                <div class="iphone-screen">
-                    <iframe id="preview-iframe" src="about:blank" sandbox="allow-scripts allow-same-origin"></iframe>
-                </div>
+        <header class="flex-shrink-0 p-3 flex justify-between items-center">
+            <button id="back-button" class="action-button py-2 px-3 rounded-lg font-semibold text-sm">&larr; Назад</button>
+            <div class="flex items-center gap-2">
+                <button id="info-button" class="icon-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                </button>
+                <button id="preview-buy-button" class="action-button py-2 px-3 rounded-lg font-bold text-sm">Купить</button>
             </div>
+        </header>
+        <div class="flex-grow flex flex-col items-center justify-center px-3">
+            <div class="iphone-frame"><div class="iphone-screen"><iframe id="preview-iframe"></iframe></div></div>
         </div>
-        <!-- Нижняя панель с информацией и кнопкой покупки -->
-        <footer class="flex-shrink-0 text-center p-4 product-card rounded-t-2xl">
-            <h2 id="preview-title" class="text-2xl font-bold"></h2>
-            <p id="preview-description" class="my-2" style="color: var(--tg-theme-hint-color);"></p>
-            <button id="preview-buy-button" class="action-button w-full py-3 rounded-lg font-bold text-lg"></button>
-        </footer>
     </div>
 
-    <!-- Модальное окно для подтверждения покупки -->
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+    <!-- Модальное окно покупки -->
+    <div id="buy-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
         <div class="product-card rounded-lg p-6 text-center w-full max-w-sm">
             <h3 class="text-xl font-semibold mb-2">Покупка</h3>
-            <p id="modal-text" class="mb-4" style="color: var(--tg-theme-hint-color);"></p>
-            <button id="close-modal" class="action-button w-full py-2 rounded-lg font-semibold">Понятно</button>
+            <p id="buy-modal-text" class="mb-4" style="color: var(--tg-theme-hint-color);"></p>
+            <button id="close-buy-modal" class="action-button w-full py-2 rounded-lg font-semibold">Понятно</button>
         </div>
+    </div>
+    
+    <!-- Модальное окно информации (снизу) -->
+    <div id="info-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
+    <div id="info-modal" class="fixed bottom-0 left-0 right-0 product-card rounded-t-2xl p-4 transform translate-y-full z-50">
+        <div class="w-12 h-1.5 bg-gray-500 rounded-full mx-auto mb-3"></div>
+        <h2 id="info-title" class="text-2xl font-bold"></h2>
+        <p id="info-price" class="text-xl font-semibold my-2" style="color: var(--tg-theme-link-color);"></p>
+        <p id="info-description" class="my-2 text-base" style="color: var(--tg-theme-hint-color);"></p>
     </div>
 
     <script>
-        // --- Данные о товарах с проверенными и рабочими ссылками ---
+    // ===================================================================================
+    // КОНТЕНТ ВСТРОЕННЫХ МИНИ-ПРИЛОЖЕНИЙ (С РАСШИРЕННЫМ ФУНКЦИОНАЛОМ)
+    // ===================================================================================
+    const appContent = {
+        cryptoWallet: {
+            html: `
+                <div class="wallet-container">
+                    <header>
+                        <p>Общий баланс</p>
+                        <h1>$1,234.56</h1>
+                    </header>
+                    <div class="actions">
+                        <button class="btn-primary"><span>⬆️</span> Отправить</button>
+                        <button class="btn-secondary"><span>⬇️</span> Получить</button>
+                    </div>
+                    <div class="history">
+                        <h3>История</h3>
+                        <div class="transaction"><div><p>Получено BTC</p><small>Сегодня</small></div><span class="in">+0.05 BTC</span></div>
+                        <div class="transaction"><div><p>Отправлено ETH</p><small>Вчера</small></div><span class="out">-1.2 ETH</span></div>
+                        <div class="transaction"><div><p>Получено TON</p><small>25 Авг</small></div><span class="in">+15 TON</span></div>
+                    </div>
+                </div>`,
+            css: `
+                body { font-family: sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 20px; font-size: 14px; }
+                header p { margin: 0; color: #aaa; }
+                header h1 { margin: 5px 0 25px; font-size: 2.2em; }
+                .actions { display: flex; gap: 15px; justify-content: center; margin-bottom: 25px; }
+                button { border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+                .btn-primary { background: #007bff; color: white; }
+                .btn-secondary { background: #333; color: white; }
+                .history h3 { text-align: left; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 5px; }
+                .transaction { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+                .transaction p { margin: 0; } .transaction small { color: #888; }
+                .transaction .in { color: #28a745; } .transaction .out { color: #dc3545; }`
+        },
+        taskManager: {
+            html: `
+                <div class="task-app">
+                    <header><h1>Мои Задачи</h1><span id="task-counter">0 задач</span></header>
+                    <ul id="task-list"></ul>
+                    <form id="add-task-form">
+                        <input type="text" id="task-input" placeholder="Например, купить молоко..." required>
+                        <button type="submit">+</button>
+                    </form>
+                </div>`,
+            css: `
+                body { background: #f0f2f5; font-family: sans-serif; margin: 0; }
+                .task-app { padding: 20px; }
+                header { display: flex; justify-content: space-between; align-items: center; }
+                h1 { color: #1c1e21; margin: 0; font-size: 1.5em; }
+                #task-counter { color: #888; }
+                ul { list-style: none; padding: 0; margin: 15px 0; }
+                li { background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+                .task-text { cursor: pointer; flex-grow: 1; }
+                .task-text.completed { text-decoration: line-through; color: #888; }
+                .delete-btn { background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; }
+                form { display: flex; }
+                input { flex-grow: 1; border: 1px solid #ddd; padding: 12px; border-radius: 8px 0 0 8px; }
+                button[type="submit"] { border: none; background: #1877f2; color: white; font-size: 1.5em; width: 50px; border-radius: 0 8px 8px 0; }`,
+            js: `
+                const form = document.getElementById('add-task-form');
+                const input = document.getElementById('task-input');
+                const list = document.getElementById('task-list');
+                const counter = document.getElementById('task-counter');
+                
+                function updateCounter() {
+                    const count = list.children.length;
+                    counter.textContent = \`\${count} задач\`;
+                }
+
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const taskText = input.value.trim();
+                    if (taskText) {
+                        const li = document.createElement('li');
+                        li.innerHTML = \`<span class="task-text">\${taskText}</span><button class="delete-btn">-</button>\`;
+                        list.appendChild(li);
+                        input.value = '';
+                        updateCounter();
+                    }
+                });
+
+                list.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('task-text')) {
+                        e.target.classList.toggle('completed');
+                    }
+                    if (e.target.classList.contains('delete-btn')) {
+                        e.target.parentElement.remove();
+                        updateCounter();
+                    }
+                });
+                updateCounter();`
+        },
+        ecommerceUI: {
+            html: `
+                <div class="product-page">
+                    <div class="image-gallery"><img src="https://placehold.co/400x400/3498db/ffffff?text=Product" alt="Product"></div>
+                    <div class="details">
+                        <h2>Классные кроссовки</h2>
+                        <p class="price">$120.00</p>
+                        <div class="options">
+                            <div class="size-selector">
+                                <p>Размер:</p>
+                                <button class="size-btn active">41</button><button class="size-btn">42</button><button class="size-btn">43</button>
+                            </div>
+                            <div class="quantity-selector">
+                                <button id="minus">-</button><span id="quantity">1</span><button id="plus">+</button>
+                            </div>
+                        </div>
+                        <p class="description">Отличные кроссовки для бега и повседневной носки.</p>
+                        <button class="add-to-cart">Добавить в корзину</button>
+                    </div>
+                </div>`,
+            css: `
+                body { margin: 0; font-family: sans-serif; background: #fff; color: #333; }
+                .image-gallery img { width: 100%; display: block; }
+                .details { padding: 15px; }
+                h2 { margin: 0; }
+                .price { font-size: 1.5em; font-weight: bold; color: #3498db; margin: 5px 0; }
+                .options { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; }
+                .size-selector { display: flex; align-items: center; gap: 5px; }
+                .size-btn { border: 1px solid #ccc; background: #fff; padding: 5px 10px; border-radius: 5px; }
+                .size-btn.active { background: #3498db; color: white; border-color: #3498db; }
+                .quantity-selector { display: flex; align-items: center; gap: 10px; }
+                .quantity-selector button { font-weight: bold; border: 1px solid #ccc; width: 30px; height: 30px; border-radius: 50%; }
+                .description { color: #777; line-height: 1.5; font-size: 0.9em; }
+                .add-to-cart { display: block; width: 100%; padding: 15px; border: none; background: #3498db; color: white; font-size: 1em; font-weight: bold; border-radius: 10px; }`,
+            js: `
+                const quantityEl = document.getElementById('quantity');
+                document.getElementById('plus').addEventListener('click', () => {
+                    quantityEl.textContent = parseInt(quantityEl.textContent) + 1;
+                });
+                document.getElementById('minus').addEventListener('click', () => {
+                    let q = parseInt(quantityEl.textContent);
+                    if (q > 1) quantityEl.textContent = q - 1;
+                });
+                document.querySelectorAll('.size-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelector('.size-btn.active').classList.remove('active');
+                        e.target.classList.add('active');
+                    });
+                });`
+        },
+        quizApp: {
+            html: `
+                <div class="quiz-container">
+                    <div id="quiz-card">
+                        <p id="progress"></p>
+                        <h2 id="question"></h2>
+                        <div id="options"></div>
+                    </div>
+                    <div id="result-card" style="display:none;">
+                        <h2>Результат</h2><p id="score"></p><button id="restart">Попробовать снова</button>
+                    </div>
+                </div>`,
+            css: `
+                body { background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); font-family: sans-serif; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 15px; box-sizing: border-box; }
+                .quiz-container { width: 100%; }
+                #quiz-card, #result-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; }
+                #progress { color: #ddd; }
+                .option { background: rgba(255,255,255,0.2); padding: 12px; margin: 8px 0; border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+                .option.correct { background: #28a745; } .option.wrong { background: #dc3545; }
+                #restart { border: none; background: #fff; color: #6a11cb; padding: 10px 20px; border-radius: 8px; font-weight: bold; }`,
+            js: `
+                const questions = [
+                    { q: "Столица Франции?", o: ["Берлин", "Мадрид", "Париж", "Рим"], a: "Париж" },
+                    { q: "2 + 2 * 2 = ?", o: ["6", "8", "4", "10"], a: "6" },
+                    { q: "Какая планета красная?", o: ["Юпитер", "Марс", "Венера", "Сатурн"], a: "Марс" },
+                    { q: "Самое высокое здание в мире?", o: ["Шанхайская башня", "Бурдж-Халифа", "Мердека 118"], a: "Бурдж-Халифа" }
+                ];
+                let currentQ = 0; let score = 0;
+
+                const progressEl = document.getElementById('progress');
+                const questionEl = document.getElementById('question');
+                const optionsEl = document.getElementById('options');
+                const quizCard = document.getElementById('quiz-card');
+                const resultCard = document.getElementById('result-card');
+                const scoreEl = document.getElementById('score');
+                const restartBtn = document.getElementById('restart');
+
+                function loadQuestion() {
+                    if (currentQ >= questions.length) {
+                        quizCard.style.display = 'none';
+                        resultCard.style.display = 'block';
+                        scoreEl.textContent = \`Ваш счет: \${score} из \${questions.length}\`;
+                        return;
+                    }
+                    const qData = questions[currentQ];
+                    progressEl.textContent = \`Вопрос \${currentQ + 1} из \${questions.length}\`;
+                    questionEl.textContent = qData.q;
+                    optionsEl.innerHTML = '';
+                    optionsEl.style.pointerEvents = 'auto';
+                    qData.o.forEach(option => {
+                        const btn = document.createElement('div');
+                        btn.textContent = option;
+                        btn.className = 'option';
+                        btn.addEventListener('click', () => {
+                            optionsEl.style.pointerEvents = 'none';
+                            if (option === qData.a) {
+                                score++;
+                                btn.classList.add('correct');
+                            } else {
+                                btn.classList.add('wrong');
+                            }
+                            setTimeout(() => { currentQ++; loadQuestion(); }, 1000);
+                        });
+                        optionsEl.appendChild(btn);
+                    });
+                }
+                restartBtn.addEventListener('click', () => {
+                    currentQ = 0; score = 0;
+                    resultCard.style.display = 'none'; quizCard.style.display = 'block';
+                    loadQuestion();
+                });
+                loadQuestion();`
+        },
+        musicPlayer: {
+            html: `
+                <div class="player">
+                    <img src="https://placehold.co/400x400/1db954/ffffff?text=Album" alt="Album Art" class="album-art">
+                    <div class="track-info">
+                        <h2>Название Трека</h2><p>Исполнитель</p>
+                    </div>
+                    <div class="progress-bar"><div id="progress"></div></div>
+                    <div class="controls">
+                        <button>⏮</button><button id="play-btn">▶️</button><button>⏭</button>
+                    </div>
+                </div>`,
+            css: `
+                body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                .player { text-align: center; width: 90%; }
+                .album-art { width: 100%; border-radius: 15px; margin-bottom: 20px; }
+                .track-info h2 { margin: 0; } .track-info p { color: #b3b3b3; margin: 5px 0 15px; }
+                .progress-bar { background: #444; border-radius: 5px; height: 5px; margin-bottom: 15px; }
+                #progress { background: #1db954; width: 30%; height: 100%; border-radius: 5px; }
+                .controls { display: flex; justify-content: center; align-items: center; gap: 20px; }
+                .controls button { background: none; border: none; color: white; font-size: 2em; }
+                #play-btn { font-size: 3em; }`,
+            js: `
+                const playBtn = document.getElementById('play-btn');
+                let isPlaying = false;
+                playBtn.addEventListener('click', () => {
+                    isPlaying = !isPlaying;
+                    playBtn.textContent = isPlaying ? '⏸️' : '▶️';
+                });`
+        }
+    };
+
+    // ===================================================================================
+    // ОСНОВНАЯ ЛОГИКА МАРКЕТПЛЕЙСА
+    // ===================================================================================
+    document.addEventListener('DOMContentLoaded', () => {
         const products = [
-            {
-                id: 1,
-                name: 'Игра 2048',
-                description: 'Классическая головоломка 2048 для проверки логики.',
-                price: '15 TON',
-                imageUrl: 'https://placehold.co/400x400/8e44ad/ffffff?text=2048',
-                previewUrl: 'https://alok-m.github.io/2048-in-js/'
-            },
-            {
-                id: 2,
-                name: 'Погодный информер',
-                description: 'Красивый анимированный интерфейс для прогноза погоды.',
-                price: '30 TON',
-                imageUrl: 'https://placehold.co/400x400/2980b9/ffffff?text=Weather',
-                previewUrl: 'https://codepen.io/WillyW/embed/SCKiz'
-            },
-            {
-                id: 3,
-                name: 'Flip Часы',
-                description: 'Стильные и минималистичные часы с эффектом перелистывания.',
-                price: '10 TON',
-                imageUrl: 'https://placehold.co/400x400/c0392b/ffffff?text=Clock',
-                previewUrl: 'https://h-jm.github.io/flip-clock/'
-            },
-            {
-                id: 4,
-                name: 'Блокнот для рисования',
-                description: 'Простой холст для ваших скетчей и заметок.',
-                price: '25 TON',
-                imageUrl: 'https://placehold.co/400x400/27ae60/ffffff?text=Draw',
-                previewUrl: 'https://williammalone.com/projects/html5-canvas-drawing-app/'
-            },
-            {
-                id: 5,
-                name: 'Музыкальный плеер',
-                description: 'Интерфейс простого плеера для ваших треков.',
-                price: '20 TON',
-                imageUrl: 'https://placehold.co/400x400/f39c12/ffffff?text=Player',
-                previewUrl: 'https://codepen.io/Mamboleoo/embed/XWJPjGg'
-            }
+            { id: 1, name: 'Crypto Wallet UI', description: 'Современный и чистый интерфейс для крипто-кошелька.', price: '45 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Wallet', content: appContent.cryptoWallet },
+            { id: 2, name: 'Task Tracker', description: 'Простой и удобный менеджер задач для вашей команды.', price: '30 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Tasks', content: appContent.taskManager },
+            { id: 3, name: 'Shop Frontend', description: 'Готовый шаблон для витрины вашего интернет-магазина.', price: '65 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Shop', content: appContent.ecommerceUI },
+            { id: 4, name: 'Interactive Quiz', description: 'Вовлекайте аудиторию, создавая увлекательные квизы.', price: '40 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Quiz', content: appContent.quizApp },
+            { id: 5, name: 'Audio Player Kit', description: 'Стильный и минималистичный музыкальный плеер.', price: '50 TON', imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Music', content: appContent.musicPlayer }
         ];
 
-        // --- Основная логика приложения ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-            tg.expand();
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
-            const gridView = document.getElementById('grid-view');
-            const previewView = document.getElementById('preview-view');
-            const productGrid = document.getElementById('product-grid');
-            const welcomeMessage = document.getElementById('welcome-message');
-            
-            const backButton = document.getElementById('back-button');
-            const previewIframe = document.getElementById('preview-iframe');
-            const previewTitle = document.getElementById('preview-title');
-            const previewDescription = document.getElementById('preview-description');
-            const previewBuyButton = document.getElementById('preview-buy-button');
+        const gridView = document.getElementById('grid-view');
+        const previewView = document.getElementById('preview-view');
+        const productGrid = document.getElementById('product-grid');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const backButton = document.getElementById('back-button');
+        const previewIframe = document.getElementById('preview-iframe');
+        const infoButton = document.getElementById('info-button');
+        const previewBuyButton = document.getElementById('preview-buy-button');
+        
+        const buyModal = document.getElementById('buy-modal');
+        const buyModalText = document.getElementById('buy-modal-text');
+        const closeBuyModalButton = document.getElementById('close-buy-modal');
 
-            const modal = document.getElementById('modal');
-            const modalText = document.getElementById('modal-text');
-            const closeModalButton = document.getElementById('close-modal');
-            
-            let currentProduct = null;
+        const infoModalOverlay = document.getElementById('info-modal-overlay');
+        const infoModal = document.getElementById('info-modal');
+        const infoTitle = document.getElementById('info-title');
+        const infoPrice = document.getElementById('info-price');
+        const infoDescription = document.getElementById('info-description');
+        
+        let currentProduct = null;
 
-            if (tg.initDataUnsafe?.user?.first_name) {
-                welcomeMessage.textContent = `Добро пожаловать, ${tg.initDataUnsafe.user.first_name}!`;
-            }
+        if (tg.initDataUnsafe?.user?.first_name) {
+            welcomeMessage.textContent = `Добро пожаловать, ${tg.initDataUnsafe.user.first_name}!`;
+        }
 
-            function renderProducts() {
-                productGrid.innerHTML = '';
-                products.forEach(product => {
-                    const card = document.createElement('div');
-                    card.dataset.productId = product.id;
-                    card.className = 'product-card rounded-lg p-3 flex flex-col shadow-lg cursor-pointer';
-                    card.innerHTML = `
-                        <img src="${product.imageUrl}" alt="${product.name}" class="rounded-md w-full aspect-square object-cover mb-3 pointer-events-none">
-                        <div class="flex-grow pointer-events-none">
-                            <h3 class="font-bold text-md">${product.name}</h3>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between pointer-events-none">
-                            <span class="font-semibold text-lg">${product.price}</span>
-                            <span class="action-button text-sm font-bold py-1.5 px-3 rounded-md">
-                                Смотреть
-                            </span>
-                        </div>
-                    `;
-                    card.addEventListener('click', () => showPreview(product.id));
-                    productGrid.appendChild(card);
-                });
-            }
-
-            function showPreview(productId) {
-                currentProduct = products.find(p => p.id == productId);
-                if (!currentProduct) return;
-
-                previewTitle.textContent = currentProduct.name;
-                previewDescription.textContent = currentProduct.description;
-                previewBuyButton.textContent = `Купить за ${currentProduct.price}`;
-                previewIframe.src = currentProduct.previewUrl;
-
-                gridView.classList.add('hidden');
-                previewView.classList.remove('hidden');
-                
-                tg.HapticFeedback.impactOccurred('light');
-            }
-
-            function showGrid() {
-                currentProduct = null;
-                previewIframe.src = 'about:blank';
-                
-                previewView.classList.add('hidden');
-                gridView.classList.remove('hidden');
-            }
-
-            backButton.addEventListener('click', showGrid);
-
-            previewBuyButton.addEventListener('click', () => {
-                if (!currentProduct) return;
-                modalText.textContent = `Вы добавили "${currentProduct.name}" в корзину. Это демонстрация, реальная оплата не производится.`;
-                modal.classList.remove('hidden');
-                tg.HapticFeedback.notificationOccurred('success');
+        function renderProducts() {
+            productGrid.innerHTML = '';
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.dataset.productId = product.id;
+                card.className = 'product-card rounded-lg p-2 flex flex-col shadow-lg cursor-pointer';
+                card.innerHTML = `
+                    <img src="${product.imageUrl}" alt="${product.name}" class="rounded-md w-full aspect-square object-cover mb-2 pointer-events-none">
+                    <div class="flex-grow pointer-events-none"><h3 class="font-bold text-sm">${product.name}</h3></div>
+                    <div class="mt-2 flex items-center justify-between pointer-events-none">
+                        <span class="font-semibold text-base">${product.price}</span>
+                        <span class="action-button text-xs font-bold py-1 px-2 rounded-md">Смотреть</span>
+                    </div>`;
+                card.addEventListener('click', () => showPreview(product.id));
+                productGrid.appendChild(card);
             });
-            
-            closeModalButton.addEventListener('click', () => {
-                modal.classList.add('hidden');
-            });
+        }
 
-            renderProducts();
+        function showPreview(productId) {
+            currentProduct = products.find(p => p.id == productId);
+            if (!currentProduct) return;
+
+            infoTitle.textContent = currentProduct.name;
+            infoDescription.textContent = currentProduct.description;
+            infoPrice.textContent = currentProduct.price;
+            
+            const iframeContent = `<!DOCTYPE html><html><head><style>${currentProduct.content.css || ''}</style></head><body>${currentProduct.content.html || ''}<script>${currentProduct.content.js || ''}<\/script></body></html>`;
+            previewIframe.srcdoc = iframeContent;
+
+            gridView.classList.add('hidden');
+            previewView.classList.remove('hidden');
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function showGrid() {
+            currentProduct = null;
+            previewIframe.srcdoc = '';
+            previewView.classList.add('hidden');
+            gridView.classList.remove('hidden');
+            closeInfoModal();
+        }
+
+        function openInfoModal() {
+            infoModalOverlay.classList.remove('hidden');
+            infoModal.classList.add('is-open');
+        }
+
+        function closeInfoModal() {
+            infoModalOverlay.classList.add('hidden');
+            infoModal.classList.remove('is-open');
+        }
+
+        backButton.addEventListener('click', showGrid);
+        infoButton.addEventListener('click', openInfoModal);
+        infoModalOverlay.addEventListener('click', closeInfoModal);
+
+        previewBuyButton.addEventListener('click', () => {
+            if (!currentProduct) return;
+            buyModalText.textContent = `Вы добавили "${currentProduct.name}" в корзину. Это демонстрация.`;
+            buyModal.classList.remove('hidden');
+            tg.HapticFeedback.notificationOccurred('success');
         });
+        closeBuyModalButton.addEventListener('click', () => buyModal.classList.add('hidden'));
+
+        renderProducts();
+    });
     </script>
 </body>
 </html>
