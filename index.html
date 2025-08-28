@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>devtol.market</title>
+    <!-- Подключение Tailwind CSS для стилей -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Скрипт Telegram Web App -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Основные переменные темы, соответствующие Telegram */
+        :root {
+            --tg-theme-bg-color: #18222d;
+            --tg-theme-text-color: #ffffff;
+            --tg-theme-hint-color: #b1c3d5;
+            --tg-theme-button-color: #5288c1;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #222e3a;
+        }
+
+        /* Базовые стили для всего приложения */
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* Предотвращаем прокрутку на уровне body */
+        }
+
+        body {
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Стили для экранов (view) */
+        .view {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            overflow-y: auto; /* Включаем прокрутку внутри экрана */
+        }
+
+        /* Стили для карточки товара и кнопок */
+        .product-card {
+            background-color: var(--tg-theme-secondary-bg-color);
+            border: 1px solid #304050;
+        }
+        .action-button {
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            transition: background-color 0.2s ease;
+        }
+        .action-button:active {
+            background-color: #6ca0d9; /* Эффект при нажатии */
+        }
+        
+        /* Стили для рамки iPhone */
+        .iphone-frame {
+            position: relative;
+            width: 100%;
+            max-width: 375px; /* Типичная ширина для эмуляции */
+            height: 75vh;
+            max-height: 750px;
+            margin: 1rem auto;
+            border: 12px solid #111;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #000;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .iphone-frame::before { /* "Челка" iPhone */
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40%;
+            height: 25px;
+            background: #111;
+            border-radius: 0 0 15px 15px;
+            z-index: 2;
+        }
+        .iphone-screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 40px;
+            overflow: hidden;
+        }
+        .iphone-screen iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Экран 1: Сетка с товарами -->
+    <div id="grid-view" class="view p-4">
+        <header class="text-center my-4">
+            <h1 class="text-3xl font-bold tracking-tight">devtol.market</h1>
+            <p id="welcome-message" class="text-lg" style="color: var(--tg-theme-hint-color);">Готовые Telegram Mini Apps</p>
+        </header>
+        <main>
+            <div id="product-grid" class="grid grid-cols-2 gap-4">
+                <!-- Карточки товаров будут вставлены сюда через JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Экран 2: Предпросмотр товара -->
+    <div id="preview-view" class="view hidden flex flex-col p-0">
+        <!-- Верхняя панель с кнопкой "Назад" -->
+        <header class="flex-shrink-0 p-4">
+            <button id="back-button" class="action-button py-2 px-4 rounded-lg font-semibold">&larr; Назад</button>
+        </header>
+        <!-- Основная часть с iframe -->
+        <div class="flex-grow flex flex-col items-center justify-center px-4">
+            <div class="iphone-frame">
+                <div class="iphone-screen">
+                    <iframe id="preview-iframe" src="about:blank" sandbox="allow-scripts allow-same-origin"></iframe>
+                </div>
+            </div>
+        </div>
+        <!-- Нижняя панель с информацией и кнопкой покупки -->
+        <footer class="flex-shrink-0 text-center p-4 product-card rounded-t-2xl">
+            <h2 id="preview-title" class="text-2xl font-bold"></h2>
+            <p id="preview-description" class="my-2" style="color: var(--tg-theme-hint-color);"></p>
+            <button id="preview-buy-button" class="action-button w-full py-3 rounded-lg font-bold text-lg"></button>
+        </footer>
+    </div>
+
+    <!-- Модальное окно для подтверждения покупки -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+        <div class="product-card rounded-lg p-6 text-center w-full max-w-sm">
+            <h3 class="text-xl font-semibold mb-2">Покупка</h3>
+            <p id="modal-text" class="mb-4" style="color: var(--tg-theme-hint-color);"></p>
+            <button id="close-modal" class="action-button w-full py-2 rounded-lg font-semibold">Понятно</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Данные о товарах ---
+        // ПРИМЕЧАНИЕ: Ссылки были заменены на те, что разрешают встраивание (embedding).
+        // Оригинальные ссылки с Netlify имеют заголовки безопасности, которые это блокируют.
+        const products = [
+             {
+                id: 1,
+                name: 'Калькулятор',
+                description: 'Простой и удобный калькулятор для быстрых расчетов.',
+                price: '15 TON',
+                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Calc',
+                previewUrl: 'https://codepen.io/mjunaidi/embed/BqGGrW'
+            },
+            {
+                id: 2,
+                name: 'Погода',
+                description: 'Приложение для просмотра прогноза погоды в вашем городе.',
+                price: '30 TON',
+                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Weather',
+                previewUrl: 'https://codepen.io/z-/embed/zYxdZep'
+            },
+            {
+                id: 3,
+                name: 'Крестики-нолики',
+                description: 'Классическая игра, чтобы скоротать время.',
+                price: '10 TON',
+                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=XO',
+                previewUrl: 'https://codepen.io/giana/embed/BoapgR'
+            },
+            {
+                id: 4,
+                name: 'Блокнот для рисования',
+                description: 'Простой холст для ваших скетчей и заметок.',
+                price: '25 TON',
+                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Draw',
+                previewUrl: 'https://codepen.io/braydonc/embed/KwrLgP'
+            },
+            {
+                id: 5,
+                name: 'Pomodoro Таймер',
+                description: 'Таймер для повышения продуктивности по технике Pomodoro.',
+                price: '20 TON',
+                imageUrl: 'https://placehold.co/400x400/5288c1/ffffff?text=Timer',
+                previewUrl: 'https://codepen.io/kfarr/embed/oWzJgL'
+            }
+        ];
+
+        // --- Основная логика приложения ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+
+            // --- Получение всех необходимых элементов со страницы ---
+            const gridView = document.getElementById('grid-view');
+            const previewView = document.getElementById('preview-view');
+            const productGrid = document.getElementById('product-grid');
+            const welcomeMessage = document.getElementById('welcome-message');
+            
+            const backButton = document.getElementById('back-button');
+            const previewIframe = document.getElementById('preview-iframe');
+            const previewTitle = document.getElementById('preview-title');
+            const previewDescription = document.getElementById('preview-description');
+            const previewBuyButton = document.getElementById('preview-buy-button');
+
+            const modal = document.getElementById('modal');
+            const modalText = document.getElementById('modal-text');
+            const closeModalButton = document.getElementById('close-modal');
+            
+            let currentProduct = null;
+
+            // Приветствие пользователя
+            if (tg.initDataUnsafe?.user?.first_name) {
+                welcomeMessage.textContent = `Добро пожаловать, ${tg.initDataUnsafe.user.first_name}!`;
+            }
+
+            // --- Функции ---
+
+            // Функция для отрисовки сетки товаров
+            function renderProducts() {
+                productGrid.innerHTML = ''; // Очищаем перед отрисовкой
+                products.forEach(product => {
+                    const card = document.createElement('div');
+                    // Используем data-атрибут для хранения ID товара
+                    card.dataset.productId = product.id;
+                    card.className = 'product-card rounded-lg p-3 flex flex-col shadow-lg cursor-pointer';
+                    card.innerHTML = `
+                        <img src="${product.imageUrl}" alt="${product.name}" class="rounded-md w-full aspect-square object-cover mb-3 pointer-events-none">
+                        <div class="flex-grow pointer-events-none">
+                            <h3 class="font-bold text-md">${product.name}</h3>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between pointer-events-none">
+                            <span class="font-semibold text-lg">${product.price}</span>
+                            <span class="action-button text-sm font-bold py-1.5 px-3 rounded-md">
+                                Смотреть
+                            </span>
+                        </div>
+                    `;
+                    // Добавляем обработчик клика на саму карточку
+                    card.addEventListener('click', () => showPreview(product.id));
+                    productGrid.appendChild(card);
+                });
+            }
+
+            // Функция для показа экрана предпросмотра
+            function showPreview(productId) {
+                currentProduct = products.find(p => p.id == productId);
+                if (!currentProduct) return;
+
+                // Заполняем данные на экране предпросмотра
+                previewTitle.textContent = currentProduct.name;
+                previewDescription.textContent = currentProduct.description;
+                previewBuyButton.textContent = `Купить за ${currentProduct.price}`;
+                previewIframe.src = currentProduct.previewUrl;
+
+                // Переключаем видимость экранов
+                gridView.classList.add('hidden');
+                previewView.classList.remove('hidden');
+                
+                // Тактильный отклик для лучшего UX
+                tg.HapticFeedback.impactOccurred('light');
+            }
+
+            // Функция для возврата к сетке товаров
+            function showGrid() {
+                currentProduct = null;
+                previewIframe.src = 'about:blank'; // Выгружаем iframe для экономии ресурсов
+                
+                previewView.classList.add('hidden');
+                gridView.classList.remove('hidden');
+            }
+
+            // --- Назначение обработчиков событий ---
+
+            backButton.addEventListener('click', showGrid);
+
+            previewBuyButton.addEventListener('click', () => {
+                if (!currentProduct) return;
+                modalText.textContent = `Вы добавили "${currentProduct.name}" в корзину. Это демонстрация, реальная оплата не производится.`;
+                modal.classList.remove('hidden');
+                tg.HapticFeedback.notificationOccurred('success');
+            });
+            
+            closeModalButton.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            // --- Инициализация приложения ---
+            renderProducts();
+        });
+    </script>
+</body>
+</html>
